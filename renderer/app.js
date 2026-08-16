@@ -234,6 +234,9 @@ const stepsOf = (id) => {
 /* ---------------------------------------------------------------- actions */
 
 function switchView(view) {
+  if (state.activeId) {
+    closeRecipe()
+  }
   if (view === state.view) return
   setState({ view })
 }
@@ -417,6 +420,15 @@ function createGrid(container) {
       // Saved state
       const isSaved = state.favorites.includes(viand.id)
       node.dataset.saved = String(isSaved)
+      const favBtn = node.querySelector('[data-act="save-card"]')
+      if (favBtn) {
+        favBtn.setAttribute("aria-pressed", String(isSaved))
+        favBtn.classList.toggle("active", isSaved)
+        const icon = favBtn.querySelector(".material-symbols-outlined")
+        if (icon) {
+          icon.style.fontVariationSettings = isSaved ? "'FILL' 1, 'wght' 600" : "'FILL' 0, 'wght' 400"
+        }
+      }
 
       // Pantry-ready tag
       if (state.selected.length > 0) {
@@ -498,6 +510,18 @@ function paintHistory() {
 
 /* ======================================================== RECIPE SHEET */
 
+function stepHeading(text, index) {
+  const lower = text.toLowerCase()
+  if (lower.includes("marinate")) return "Marinate"
+  if (lower.includes("sear") || lower.includes("brown") || lower.includes("pan-fry") || lower.includes("fry")) return "Sear & Brown"
+  if (lower.includes("sauté") || lower.includes("saute")) return "Sauté Aromatics"
+  if (lower.includes("boil") || lower.includes("simmer")) return "Simmer"
+  if (lower.includes("vinegar") || lower.includes("reduce") || lower.includes("sauce")) return "Reduce Sauce"
+  if (lower.includes("season") || lower.includes("taste")) return "Season"
+  if (lower.includes("serve") || lower.includes("garnish") || lower.includes("plate")) return "Plate & Serve"
+  return `Step ${index + 1}`
+}
+
 function paintRecipeSheet() {
   const viand = viandById.get(state.activeId)
   if (!viand) return
@@ -510,16 +534,13 @@ function paintRecipeSheet() {
       ui.rPhotoImg.src = "./images/dishes/dish-1.jpg"
     }
   }
-  ui.rPhoto.style.setProperty("--photo-img", `url("${imgUrl}")`)
-  ui.recipeSheet.style.setProperty("--accent", "var(--amber)")
 
   ui.rKicker.textContent = viand.cats.join(" · ")
   ui.rName.textContent = viand.name
-  ui.rFname.textContent = viand.fname
-  ui.rDiff.textContent = viand.diff
-  ui.rTime.textContent = fmtTime(viand.minutes)
-  ui.rServes.textContent = `${viand.serves}`
-  ui.rCat.textContent = viand.cats[0]
+  ui.rFname.textContent = viand.fname || ""
+  ui.rDiff.textContent = viand.diff.toUpperCase()
+  ui.rTime.textContent = fmtTime(viand.minutes).toUpperCase()
+  ui.rServes.textContent = `${viand.serves} SERVINGS`
   ui.rDesc.textContent = viand.desc
 
   // Source attribution (Panlasang Pinoy)
@@ -549,7 +570,7 @@ function paintRecipeSheet() {
     return { itemText, originalIndex, isHave }
   })
 
-  // Sort so "On hand" ingredients are ALWAYS on TOP
+  // Sort so "On hand" ingredients are on top
   processedItems.sort((a, b) => {
     if (a.isHave === b.isHave) return a.originalIndex - b.originalIndex
     return a.isHave ? -1 : 1
@@ -561,17 +582,30 @@ function paintRecipeSheet() {
 
   ui.rMeter.hidden = haveCount === 0
   ui.rMeter.style.setProperty("--progress", `${calcPct}%`)
-  ui.rIngNote.textContent = `${haveCount} of ${totalCount} on hand · tap tag to toggle`
+  ui.rIngNote.textContent = `${haveCount} of ${totalCount} on hand · tap checkbox to toggle`
 
   ui.rIngList.replaceChildren(
     ...processedItems.map(({ itemText, originalIndex, isHave }) => {
       const li = document.createElement("li")
+      li.className = "ing-check-item"
       li.dataset.have = String(isHave)
+
+      const label = document.createElement("label")
+      label.className = "ing-check-label"
+
+      const chk = document.createElement("input")
+      chk.type = "checkbox"
+      chk.className = "ing-checkbox"
+      chk.checked = isHave
+      chk.dataset.toggleIng = String(originalIndex)
+      label.append(chk)
 
       const spanText = document.createElement("span")
       spanText.className = "ing-name"
       spanText.textContent = itemText
-      li.append(spanText)
+      label.append(spanText)
+
+      li.append(label)
 
       const btn = document.createElement("button")
       btn.type = "button"
@@ -588,18 +622,52 @@ function paintRecipeSheet() {
   const done = stepsOf(viand.id).filter(Boolean).length
   ui.rStepNote.textContent = done ? `${done}/${viand.steps.length} steps done` : `${viand.steps.length} steps`
   ui.rStepList.replaceChildren(
-    ...viand.steps.map((text) => {
-      const li = document.createElement("li")
-      li.textContent = text
-      return li
+    ...viand.steps.map((text, idx) => {
+      const stepEl = document.createElement("div")
+      stepEl.className = "instruction-step"
+
+      const badge = document.createElement("div")
+      badge.className = "step-badge"
+      badge.textContent = String(idx + 1).padStart(2, "0")
+      stepEl.append(badge)
+
+      const content = document.createElement("div")
+      content.className = "step-content"
+
+      const title = document.createElement("h3")
+      title.className = "step-title"
+      title.textContent = stepHeading(text, idx)
+      content.append(title)
+
+      const p = document.createElement("p")
+      p.className = "step-text"
+      p.textContent = text
+      content.append(p)
+
+      stepEl.append(content)
+      return stepEl
     }),
   )
 
   const saved = state.favorites.includes(viand.id)
   const favBtn = ui.recipeSheet.querySelector('[data-act="fav"]')
-  favBtn.setAttribute("aria-pressed", String(saved))
-  favBtn.querySelector(".sr-only").textContent = saved ? "Remove from saved" : "Save recipe"
-  ui.recipeSheet.querySelector('[data-act="cook"]').textContent = done ? "Resume Cooking" : "Start Cooking"
+  if (favBtn) {
+    favBtn.setAttribute("aria-pressed", String(saved))
+    favBtn.classList.toggle("active", saved)
+    const icon = favBtn.querySelector(".material-symbols-outlined")
+    if (icon) {
+      icon.style.fontVariationSettings = saved ? "'FILL' 1, 'wght' 600" : "'FILL' 0, 'wght' 400"
+    }
+  }
+
+  const cookBtn = ui.recipeSheet.querySelector('[data-act="cook"]')
+  if (cookBtn) {
+    const span = cookBtn.querySelector("span:not(.material-symbols-outlined)")
+    if (span) {
+      span.textContent = done ? "Resume Cooking Checklist" : "Start Cooking Checklist"
+    }
+  }
+
   if (missing.length && matching) ui.rIngNote.dataset.missing = String(missing.length)
 }
 
@@ -622,17 +690,13 @@ function buildCookSheet() {
     btn.setAttribute("role", "checkbox")
     btn.setAttribute("aria-checked", "false")
     btn.dataset.step = String(index)
-    const box = document.createElement("span")
-    box.className = "opt-box"
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-    const use = document.createElementNS("http://www.w3.org/2000/svg", "use")
-    use.setAttribute("href", "#i-check")
-    svg.append(use)
-    box.append(svg)
+    const num = document.createElement("span")
+    num.className = "step-btn-num"
+    num.textContent = String(index + 1).padStart(2, "0")
     const span = document.createElement("span")
-    span.className = "step-text"
+    span.className = "step-btn-text"
     span.textContent = text
-    btn.append(box, span)
+    btn.append(num, span)
     li.append(btn)
     return { btn }
   })
@@ -659,18 +723,22 @@ function render() {
   /* ---- Search Bar Visibility ---- */
   const mainHeader = document.querySelector(".main-header")
   if (mainHeader) {
-    mainHeader.hidden = state.view !== "browse"
+    mainHeader.hidden = state.view !== "browse" || Boolean(state.activeId)
   }
 
   /* ---- Views ---- */
   const views = document.querySelectorAll(".content-view")
   for (const v of views) {
-    v.hidden = v.dataset.view !== state.view
+    v.hidden = v.dataset.view !== state.view || Boolean(state.activeId)
   }
 
-  /* ---- Sidebar ---- */
-  const showSidebar = state.view === "browse"
-  document.getElementById("sidebar").style.display = showSidebar ? "" : "none"
+  /* ---- Sidebar (75% width when from browse/search, 100% full screen when from My Kitchen) ---- */
+  const isFromBrowse = state.activeId ? state.recipeOriginView === "browse" : state.view === "browse"
+  const showSidebar = isFromBrowse
+  const sidebarEl = document.getElementById("sidebar")
+  if (sidebarEl) {
+    sidebarEl.style.display = showSidebar ? "" : "none"
+  }
 
   for (const btn of sidebarButtons) {
     btn.setAttribute("aria-pressed", String(btn.dataset.cat === state.kioskCategory))
@@ -826,9 +894,17 @@ function render() {
     paintHistory()
   }
 
-  /* ---- Sheets ---- */
-  if (ui.recipeSheet.open) paintRecipeSheet()
-  if (ui.cookSheet.open) paintCookSheet()
+  /* ---- Recipe Detail View (Shared component - 75% on browse, 100% on kitchen/other) ---- */
+  if (ui.recipeSheet) {
+    const isRecipeActive = Boolean(state.activeId)
+    ui.recipeSheet.hidden = !isRecipeActive
+    if (isRecipeActive) {
+      paintRecipeSheet()
+    }
+  }
+
+  /* ---- Cooking Checklist Modal ---- */
+  if (ui.cookSheet && ui.cookSheet.open) paintCookSheet()
 }
 
 /* ================================================================ SERVICES (ELECTRON / WEB HYBRID) */
@@ -2241,42 +2317,94 @@ CRITICAL: Return ONLY a valid JSON array of dish objects with these exact keys:
   }
 }
 
+/* Parallax scroll handler on recipe sheet */
+let parallaxTicking = false
+
+function updateHeroParallax() {
+  if (prefersReducedMotion && prefersReducedMotion.matches) return
+  if (!ui.recipeScroll || !ui.rHeroImgWrap) return
+
+  const scrollTop = ui.recipeScroll.scrollTop
+  if (scrollTop > 0) {
+    // Moves slower than the scroll speed (lagging behind at 42% offset, capped smoothly)
+    const translateY = Math.min(scrollTop * 0.42, 160)
+    ui.rHeroImgWrap.style.transform = `translate3d(0, ${translateY.toFixed(2)}px, 0)`
+  } else if (scrollTop < 0) {
+    // Elastic overscroll zoom effect at the top
+    const scale = 1 + Math.abs(scrollTop) * 0.002
+    ui.rHeroImgWrap.style.transform = `scale(${scale.toFixed(3)}) translate3d(0, 0, 0)`
+  } else {
+    ui.rHeroImgWrap.style.transform = "translate3d(0, 0, 0)"
+  }
+}
+
+if (ui.recipeScroll) {
+  ui.recipeScroll.addEventListener(
+    "scroll",
+    () => {
+      if (!parallaxTicking) {
+        requestAnimationFrame(() => {
+          updateHeroParallax()
+          parallaxTicking = false
+        })
+        parallaxTicking = true
+      }
+    },
+    { passive: true },
+  )
+}
+
 function openRecipe(id) {
   state.activeId = id
+  state.recipeOriginView = state.view || "browse"
   if (ui.aiResponse) ui.aiResponse.hidden = true
   if (ui.aiLoading) ui.aiLoading.hidden = true
   if (ui.aiText) ui.aiText.textContent = ""
   paintRecipeSheet()
-  ui.recipeSheet.showModal()
+  if (ui.recipeScroll) ui.recipeScroll.scrollTop = 0
+  if (ui.rHeroImgWrap) ui.rHeroImgWrap.style.transform = "translate3d(0, 0, 0)"
+  if (ui.recipeSheet) {
+    ui.recipeSheet.hidden = false
+  }
   log("viewed", id)
+  render()
+}
+
+function closeRecipe() {
+  state.activeId = null
+  const returnView = state.recipeOriginView || state.view
+  state.recipeOriginView = null
+  if (ui.recipeSheet) {
+    ui.recipeSheet.hidden = true
+  }
+  if (ui.recipeScroll) ui.recipeScroll.scrollTop = 0
+  if (ui.rHeroImgWrap) ui.rHeroImgWrap.style.transform = "translate3d(0, 0, 0)"
+  if (state.view !== returnView) {
+    state.view = returnView
+  }
+  render()
 }
 
 function openCook(id) {
   state.cookId = id
   buildCookSheet()
   paintCookSheet()
-  if (ui.recipeSheet.open) ui.recipeSheet.close()
+  // Keep underlying recipe sheet open in background; open cooking checklist as modal overlay
   ui.cookSheet.showModal()
 }
 
-ui.recipeSheet.addEventListener("close", () => {
-  state.activeId = null
-})
 ui.cookSheet.addEventListener("close", () => {
   state.cookId = null
   cookRows = []
-})
-
-/* Dialog backdrop & close button click handlers */
-ui.recipeSheet.addEventListener("click", (event) => {
-  const closeBtn = event.target.closest('[data-act="close-recipe"]')
-  if (closeBtn || event.target === ui.recipeSheet) {
-    ui.recipeSheet.close()
+  // Update underlying recipe sheet if open so completed step count & CTA reflect latest status
+  if (state.activeId && ui.recipeSheet && !ui.recipeSheet.hidden) {
+    paintRecipeSheet()
   }
 })
 
 ui.cookSheet.addEventListener("click", (event) => {
   const closeBtn = event.target.closest('[data-act="close-cook"]')
+  // Close if X button clicked, or if user clicked on the modal backdrop outside the card
   if (closeBtn || event.target === ui.cookSheet) {
     ui.cookSheet.close()
   }
@@ -2290,6 +2418,9 @@ document.addEventListener("click", (event) => {
   /* Sidebar category buttons */
   const catBtn = target.closest(".sidebar-btn")
   if (catBtn) {
+    if (state.activeId) {
+      closeRecipe()
+    }
     const nextCat = catBtn.dataset.cat
     const q = state.query.trim().toLowerCase()
     if (q) {
@@ -2397,7 +2528,7 @@ document.addEventListener("click", (event) => {
     case "fav":
       return toggleFavorite(state.activeId)
     case "close-recipe":
-      return ui.recipeSheet.close()
+      return closeRecipe()
     case "close-cook":
       return ui.cookSheet.close()
     case "cook":
@@ -2471,8 +2602,18 @@ document.addEventListener("keydown", (event) => {
     return
   }
 
-  if (event.key === "Escape" && state.openPicker && !ui.recipeSheet.open && !ui.cookSheet.open) {
-    setState({ openPicker: null })
+  if (event.key === "Escape") {
+    if (ui.cookSheet && ui.cookSheet.open) {
+      ui.cookSheet.close()
+      return
+    }
+    if (state.activeId && ui.recipeSheet && !ui.recipeSheet.hidden) {
+      closeRecipe()
+      return
+    }
+    if (state.openPicker) {
+      setState({ openPicker: null })
+    }
   }
 })
 

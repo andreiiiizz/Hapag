@@ -9,7 +9,7 @@
 <meta name="description" content="Touch-screen kiosk for discovering Filipino ulam recipes. Browse by category, save favorites, and start cooking.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@400;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -160,146 +160,182 @@
           </div>
         </section>
       </main>
+
+      <!-- ============ RECIPE DETAIL PANEL (75% WIDTH NEXT TO SIDEBAR) ============ -->
+      <section class="recipe-detail-panel" data-ref="recipeSheet" aria-labelledby="recipeTitle" hidden>
+        <div class="sheet-scroll-container" data-ref="recipeScroll">
+          <!-- Hero Section -->
+          <div class="sheet-hero" data-ref="rHero">
+            <div class="sheet-hero-img-wrap" data-ref="rHeroImgWrap">
+              <img class="sheet-hero-img" data-ref="rPhotoImg" alt="" referrerpolicy="no-referrer" />
+              <div class="sheet-hero-gradient"></div>
+            </div>
+            <div class="sheet-hero-nav">
+              <button type="button" class="sheet-blur-btn" data-act="close-recipe" aria-label="Back to recipes">
+                <span class="material-symbols-outlined">arrow_back</span>
+              </button>
+              <button type="button" class="sheet-blur-btn favorite-btn" data-act="fav" aria-label="Favorite recipe">
+                <span class="material-symbols-outlined">favorite</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Content Container -->
+          <div class="sheet-content-wrap">
+            <!-- Header Info -->
+            <div class="sheet-header-info">
+              <div class="sheet-kicker-row">
+                <span class="sheet-kicker" data-ref="rKicker"></span>
+                <div class="sheet-source-badge" data-ref="rSourceWrap">
+                  <span class="sheet-source-label">Source:</span>
+                  <a href="https://panlasangpinoy.com" target="_blank" rel="noopener noreferrer" class="sheet-source-link" data-ref="rSourceLink">
+                    <span data-ref="rSourceName">Panlasang Pinoy</span>
+                    <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                  </a>
+                </div>
+              </div>
+              <h1 id="recipeTitle" class="sheet-title" data-ref="rName"></h1>
+              <p class="sheet-fname" data-ref="rFname"></p>
+              <p class="sheet-desc" data-ref="rDesc"></p>
+            </div>
+
+            <!-- Metadata Row -->
+            <div class="sheet-meta-row">
+              <div class="sheet-meta-item">
+                <span class="material-symbols-outlined text-primary">schedule</span>
+                <span data-ref="rTime">50 MIN</span>
+              </div>
+              <div class="sheet-meta-item">
+                <span class="material-symbols-outlined text-primary">speed</span>
+                <span data-ref="rDiff">BEGINNER</span>
+              </div>
+              <div class="sheet-meta-item">
+                <span class="material-symbols-outlined text-primary">restaurant</span>
+                <span data-ref="rServes">4 SERVINGS</span>
+              </div>
+            </div>
+
+            <!-- 2-Column Grid for Ingredients & Instructions -->
+            <div class="sheet-grid">
+              <!-- Left: Ingredients Panel -->
+              <div class="sheet-ingredients-panel">
+                <div class="panel-head">
+                  <h2 class="panel-title">Ingredients</h2>
+                  <p class="panel-note" data-ref="rIngNote"></p>
+                </div>
+                <div class="meter" data-ref="rMeter" hidden><div class="meter-fill"></div></div>
+                <ul class="ing-checklist" data-ref="rIngList"></ul>
+              </div>
+
+              <!-- Right: Instructions Panel & AI Assistant -->
+              <div class="sheet-instructions-panel">
+                <div class="panel-head">
+                  <h2 class="panel-title">Instructions</h2>
+                  <p class="panel-note" data-ref="rStepNote"></p>
+                </div>
+                <div class="instructions-list" data-ref="rStepList"></div>
+
+                <!-- AI Chef Assistant Box -->
+                <div class="sheet-ai-section">
+                  <div class="ai-box">
+                    <div class="ai-box-head">
+                      <div class="ai-title">
+                        <span class="material-symbols-outlined text-primary" style="font-size: 20px;">auto_awesome</span>
+                        <span>AI Chef Assistant</span>
+                      </div>
+                      <span class="ai-badge">Gemini AI</span>
+                    </div>
+                    <div class="ai-prompt-btns">
+                      <button type="button" class="kiosk-btn kiosk-btn-secondary kiosk-btn-sm" data-act="ai-substitutions">
+                        🔄 Substitutions
+                      </button>
+                      <button type="button" class="kiosk-btn kiosk-btn-secondary kiosk-btn-sm" data-act="ai-pairing">
+                        🍚 Pairings
+                      </button>
+                      <button type="button" class="kiosk-btn kiosk-btn-secondary kiosk-btn-sm" data-act="ai-tips">
+                        💡 Chef Tips
+                      </button>
+                    </div>
+                    <div class="ai-response" data-ref="aiResponse" hidden>
+                      <div class="ai-loading" data-ref="aiLoading" hidden>
+                        <span class="spinner" aria-hidden="true"></span> Asking AI Chef…
+                      </div>
+                      <div class="ai-text" data-ref="aiText"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sheet Footer -->
+        <footer class="sheet-foot">
+          <button class="kiosk-btn kiosk-btn-primary kiosk-btn-block" data-act="cook">
+            <span class="material-symbols-outlined" style="font-size: 22px;">skillet</span>
+            <span>Start Cooking Checklist</span>
+          </button>
+        </footer>
+      </section>
     </div>
   </div>
 
   <!-- ============ BOTTOM ACTION BAR ============ -->
   <footer class="bottombar" id="bottombar">
     <button class="bottombar-btn" data-act="open-home" id="btn-home">
-      <svg aria-hidden="true"><use href="#i-home"/></svg>
+      <span class="material-symbols-outlined">home</span>
       <span>HOME</span>
     </button>
     <button class="bottombar-btn" data-act="open-kitchen" id="btn-kitchen">
-      <svg aria-hidden="true"><use href="#i-kitchen"/></svg>
+      <span class="material-symbols-outlined">restaurant</span>
       <span>MY KITCHEN</span>
       <span class="bottombar-badge" data-ref="kitchenBadge" hidden>0</span>
     </button>
     <button class="bottombar-btn" data-act="open-saved" id="btn-saved">
-      <svg aria-hidden="true"><use href="#i-heart"/></svg>
+      <span class="material-symbols-outlined">favorite</span>
       <span>FAVORITES</span>
       <span class="bottombar-badge" data-ref="savedBadge" hidden>0</span>
     </button>
     <button class="bottombar-btn" data-act="open-history" id="btn-history">
-      <svg aria-hidden="true"><use href="#i-history"/></svg>
+      <span class="material-symbols-outlined">history</span>
       <span>HISTORY</span>
       <span class="bottombar-badge" data-ref="historyBadge" hidden>0</span>
     </button>
   </footer>
 </div>
 
-<!-- ============ RECIPE SHEET ============ -->
-<dialog class="sheet" data-ref="recipeSheet" aria-labelledby="recipeTitle">
-  <header class="sheet-head">
-    <div class="sheet-head-text">
-      <p class="sheet-kicker" data-ref="rKicker"></p>
-      <h2 id="recipeTitle" data-ref="rName"></h2>
-      <p class="sheet-fname" data-ref="rFname"></p>
-    </div>
-    <div class="sheet-head-actions">
-      <button type="button" class="icon-btn" data-act="fav" aria-pressed="false">
-        <svg aria-hidden="true"><use href="#i-heart"/></svg>
-        <span class="sr-only">Save recipe</span>
-      </button>
-      <button type="button" class="icon-btn" data-act="close-recipe">
-        <svg aria-hidden="true"><use href="#i-close"/></svg>
-        <span class="sr-only">Close recipe</span>
-      </button>
-    </div>
-  </header>
-  <div class="sheet-body">
-    <div class="sheet-photo" data-ref="rPhoto">
-      <img class="sheet-photo-img" data-ref="rPhotoImg" alt="" referrerpolicy="no-referrer" />
-    </div>
-    <div class="sheet-source-badge" data-ref="rSourceWrap">
-      <span class="sheet-source-label">Recipe Source:</span>
-      <a href="https://panlasangpinoy.com" target="_blank" rel="noopener noreferrer" class="sheet-source-link" data-ref="rSourceLink">
-        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-        <span data-ref="rSourceName">Panlasang Pinoy</span>
-      </a>
-    </div>
-    <dl class="facts">
-      <div><dt>Difficulty</dt><dd data-ref="rDiff"></dd></div>
-      <div><dt>Time</dt><dd data-ref="rTime"></dd></div>
-      <div><dt>Serves</dt><dd data-ref="rServes"></dd></div>
-      <div><dt>Category</dt><dd data-ref="rCat"></dd></div>
-    </dl>
-    <p class="sheet-desc" data-ref="rDesc"></p>
-    <div class="sheet-section">
-      <div class="section-head">
-        <h3>Ingredients</h3>
-        <p class="section-note" data-ref="rIngNote"></p>
+<!-- ============ COOKING CHECKLIST MODAL OVERLAY ============ -->
+<dialog class="sheet modal-sheet" data-ref="cookSheet" aria-labelledby="cookTitle">
+  <div class="modal-card">
+    <header class="modal-head">
+      <div class="modal-head-text">
+        <p class="modal-kicker">Cooking checklist</p>
+        <h2 id="cookTitle" class="modal-title" data-ref="cName"></h2>
+        <p class="modal-fname" data-ref="cFname"></p>
       </div>
-      <div class="meter" data-ref="rMeter" hidden><div class="meter-fill"></div></div>
-      <ul class="ing-list" data-ref="rIngList"></ul>
-    </div>
-    <div class="sheet-section">
-      <div class="section-head"><h3>Method</h3><p class="section-note" data-ref="rStepNote"></p></div>
-      <ol class="steps" data-ref="rStepList"></ol>
-    </div>
-    <div class="sheet-section ai-chef-section">
-      <div class="section-head">
-        <h3>
-          <svg class="icn-ai" aria-hidden="true" width="18" height="18"><use href="#i-sparkle"/></svg>
-          AI Chef Assistant
-        </h3>
-        <p class="section-note">Powered by Gemini AI</p>
-      </div>
-      <div class="ai-box">
-        <div class="ai-prompt-btns">
-          <button type="button" class="kiosk-btn kiosk-btn-secondary kiosk-btn-sm" data-act="ai-substitutions">
-            🔄 Substitutions
-          </button>
-          <button type="button" class="kiosk-btn kiosk-btn-secondary kiosk-btn-sm" data-act="ai-pairing">
-            🍚 Pairings
-          </button>
-          <button type="button" class="kiosk-btn kiosk-btn-secondary kiosk-btn-sm" data-act="ai-tips">
-            💡 Tips
-          </button>
+      <button type="button" class="modal-close-btn" data-act="close-cook" aria-label="Close checklist">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+    <div class="modal-body">
+      <div class="progress">
+        <div class="progress-row">
+          <span>Steps completed</span>
+          <b><span data-ref="cDone">0</span>/<span data-ref="cTotal">0</span></b>
         </div>
-        <div class="ai-response" data-ref="aiResponse" hidden>
-          <div class="ai-loading" data-ref="aiLoading" hidden>
-            <span class="spinner" aria-hidden="true"></span> Asking AI Chef…
-          </div>
-          <div class="ai-text" data-ref="aiText"></div>
-        </div>
+        <div class="meter" data-ref="cMeter"><div class="meter-fill"></div></div>
       </div>
+      <ol class="checklist" data-ref="cList"></ol>
+      <p class="done-msg" data-ref="cDoneMsg" hidden></p>
     </div>
-  </div>
-  <footer class="sheet-foot">
-    <button class="kiosk-btn kiosk-btn-primary kiosk-btn-block" data-act="cook">Start Cooking</button>
-  </footer>
-</dialog>
-
-<!-- ============ COOKING CHECKLIST ============ -->
-<dialog class="sheet" data-ref="cookSheet" aria-labelledby="cookTitle">
-  <header class="sheet-head">
-    <div class="sheet-head-text">
-      <p class="sheet-kicker">Cooking checklist</p>
-      <h2 id="cookTitle" data-ref="cName"></h2>
-      <p class="sheet-fname" data-ref="cFname"></p>
-    </div>
-    <div class="sheet-head-actions">
-      <button type="button" class="icon-btn" data-act="close-cook">
-        <svg aria-hidden="true"><use href="#i-close"/></svg>
-        <span class="sr-only">Close checklist</span>
+    <footer class="modal-foot">
+      <button type="button" class="kiosk-btn kiosk-btn-secondary" data-act="reset-steps">Reset Steps</button>
+      <button type="button" class="kiosk-btn kiosk-btn-primary" data-act="log-cooked">
+        <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+        <span>Log As Cooked</span>
       </button>
-    </div>
-  </header>
-  <div class="sheet-body">
-    <div class="progress">
-      <div class="progress-row">
-        <span>Steps completed</span>
-        <b><span data-ref="cDone">0</span>/<span data-ref="cTotal">0</span></b>
-      </div>
-      <div class="meter" data-ref="cMeter"><div class="meter-fill"></div></div>
-    </div>
-    <ol class="checklist" data-ref="cList"></ol>
-    <p class="done-msg" data-ref="cDoneMsg" hidden></p>
+    </footer>
   </div>
-  <footer class="sheet-foot sheet-foot-split">
-    <button class="kiosk-btn kiosk-btn-secondary" data-act="reset-steps">Reset Steps</button>
-    <button class="kiosk-btn kiosk-btn-primary" data-act="log-cooked">Log As Cooked</button>
-  </footer>
 </dialog>
 
 <!-- ============ TEMPLATES ============ -->
@@ -307,8 +343,8 @@
   <article class="card" data-reveal>
     <div class="card-photo">
       <img class="card-photo-img" data-ref="photoImg" alt="" referrerpolicy="no-referrer" />
-      <button class="card-add-btn" data-act="save-card" aria-label="Favorite recipe">
-        <svg aria-hidden="true"><use href="#i-heart"/></svg>
+      <button class="card-add-btn favorite-btn" data-act="save-card" aria-label="Favorite recipe">
+        <span class="material-symbols-outlined">favorite</span>
       </button>
       <span class="card-pantry-tag" data-ref="pantryTag" hidden>✓ PANTRY READY</span>
     </div>

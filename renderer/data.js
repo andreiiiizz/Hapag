@@ -19,8 +19,6 @@ export const KIOSK_CATEGORIES = [
   { key: "PRITO",     label: "PRITO" },
   { key: "INIHAW",    label: "INIHAW" },
   { key: "GULAY",     label: "GULAY" },
-  { key: "MINATAMIS", label: "MINATAMIS" },
-  { key: "SARI_SARI", label: "SARI-SARI" },
 ]
 
 /** Maps a kiosk category key to a predicate that filters VIANDS. */
@@ -31,8 +29,6 @@ export const KIOSK_CAT_FILTER = {
   PRITO:     (v) => v.cats.includes("Pork") || v.cats.includes("Chicken") || v.id === 18,
   INIHAW:    (v) => v.id === 16 || v.cats.includes("Beef"),
   GULAY:     (v) => v.cats.includes("Vegetable"),
-  MINATAMIS: (v) => v.cats.includes("Dessert") || v.cats.includes("Sweet") || v.id === 20,
-  SARI_SARI: () => true,
 }
 
 

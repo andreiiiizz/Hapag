@@ -1,0 +1,53 @@
+{
+  "name": "ulam-finder",
+  "version": "1.0.0",
+  "description": "Filipino ulam (viand) recipe finder desktop app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.rei.ulamfinder",
+    "productName": "Ulam Finder",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "!.env"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.food-and-drink"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    }
+  },
+  "allowScripts": {
+    "electron@31.7.7": true
+  }
+}

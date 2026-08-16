@@ -1,0 +1,8 @@
+node_modules/
+release/
+.env
+.vercel
+
+# Image cache (ignore downloaded images, keep folder structure)
+renderer/images/cache/*
+!renderer/images/cache/.gitkeep

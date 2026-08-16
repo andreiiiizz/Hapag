@@ -1,9 +1,33 @@
+# Dependencies
 node_modules/
-release/
+
+# Environment Variables & Secrets
 .env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# Build & Release Output
+release/
+dist/
+build/
 .vercel
+
+# AI & Agent Workspace Customizations
 .agents/
 
 # Image cache (ignore downloaded images, keep folder structure)
 renderer/images/cache/*
 !renderer/images/cache/.gitkeep
+
+# Operating System & Editor Files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vscode/
+.idea/

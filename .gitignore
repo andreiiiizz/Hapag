@@ -2,6 +2,7 @@ node_modules/
 release/
 .env
 .vercel
+.agents/
 
 # Image cache (ignore downloaded images, keep folder structure)
 renderer/images/cache/*

@@ -213,8 +213,8 @@ body {
 
 /* ============================================================== SIDEBAR */
 .sidebar {
-  width: 25%;
-  flex: 0 0 25%;
+  width: var(--sidebar-w);
+  flex: 0 0 var(--sidebar-w);
   background: var(--surface-container-low);
   border-right: 1px solid var(--outline-variant);
   display: flex;
@@ -230,7 +230,8 @@ body {
   font-size: clamp(20px, 3.2vw, 28px);
   letter-spacing: 0.08em;
   color: var(--primary);
-  padding: 24px 20px 16px 24px;
+  padding: 24px 16px 16px;
+  text-align: center;
   flex-shrink: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -288,6 +289,53 @@ body {
   color: var(--on-primary);
   font-weight: 700;
   box-shadow: 0 2px 8px rgba(255, 200, 128, 0.25);
+}
+
+/* -------------------- Responsive Sidebar for Mobile & Narrow Viewports */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-w: clamp(96px, 27vw, 120px);
+  }
+
+  .sidebar-brand {
+    padding: 18px 6px 12px;
+    font-size: clamp(14px, 3.9vw, 18px);
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+
+  .sidebar-btn {
+    width: calc(100% - 10px);
+    margin: 3px 5px;
+    padding: 7px 10px;
+    font-size: clamp(10px, 2.6vw, 11.5px);
+    letter-spacing: 0.05em;
+    min-height: 38px;
+    text-align: left;
+  }
+}
+
+@media (max-width: 360px) {
+  :root {
+    --sidebar-w: 92px;
+  }
+
+  .sidebar-brand {
+    padding: 16px 4px 10px;
+    font-size: 13.5px;
+    letter-spacing: 0.03em;
+    text-align: center;
+  }
+
+  .sidebar-btn {
+    width: calc(100% - 8px);
+    margin: 2px 4px;
+    padding: 6px 8px;
+    font-size: 9.5px;
+    letter-spacing: 0.03em;
+    min-height: 36px;
+    text-align: left;
+  }
 }
 
 /* ======================================================== MAIN CONTAINER */

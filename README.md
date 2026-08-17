@@ -1,18 +1,20 @@
-# 🍲 Hapag (Filipino Ulam Kiosk)
-
 <div align="center">
 
-![Hapag Banner](https://img.shields.io/badge/HAPAG-Filipino_Ulam_Finder-E65100?style=for-the-badge&logo=fastlane&logoColor=white)
+<h1 align="center" style="font-family: 'Playfair Display', Georgia, serif; font-size: 3.2rem; font-weight: 700; letter-spacing: 0.08em; color: #FFC880; margin-bottom: 0;">
+  HAPAG
+</h1>
+<p style="font-size: 1.15rem; color: #D7C3AE; margin-top: 4px;">
+  <strong>Filipino Ulam Kiosk & Recipe Finder</strong>
+</p>
 
-**An intelligent, touch-friendly Filipino dish discovery kiosk & meal planner powered by Google Gemini AI.**
+<p><strong>An intelligent, touch-friendly Filipino dish discovery kiosk & meal planner powered by Google Gemini AI.</strong></p>
 
 [![Electron](https://img.shields.io/badge/Electron-31.0+-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini%202.5%20Flash-8E75B2?style=flat-square&logo=google&logoColor=white)](https://aistudio.google.com/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Vercel](https://img.shields.io/badge/Vercel-Serverless%20Ready-black?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-[Features](#-key-features) • [Architecture](#-architecture--security) • [Getting Started](#-getting-started) • [Packaging](#-building-installers) • [Project Structure](#-project-structure)
+[Features](#-key-features) • [Getting Started](#-getting-started) • [Packaging](#-building-installers) • [Project Structure](#-project-structure) • [Tech Stack](#-tech-stack)
 
 </div>
 
@@ -54,44 +56,6 @@ Featuring an authentic catalog of classic Filipino dishes referencing culinary s
 ### ❤️ 6. Favorites & Cooking Activity Log
 - Save your favorite family recipes with a single tap.
 - Track past cooking sessions with timestamps and easy history management.
-
----
-
-## 🔒 Architecture & Security
-
-Hapag operates with a strict process boundary ensuring your API keys and credentials are never exposed to the client renderer:
-
-```mermaid
-flowchart LR
-    subgraph UI ["Renderer Process (UI / Browser)"]
-        A[index.html / app.js]
-    end
-
-    subgraph Bridge ["Secure Preload Layer"]
-        B[preload.js / contextBridge]
-    end
-
-    subgraph Backend ["Main Process / Serverless API"]
-        C[main.js / Electron IPC]
-        D[Vercel Serverless /api/ai.js]
-    end
-
-    subgraph Cloud ["External Services"]
-        E[Google Gemini AI API]
-        F[Wikipedia / Wikimedia Commons]
-    end
-
-    A -- "window.electronAPI" --> B
-    B -- "IPC (ai-call, fetch-dish-image)" --> C
-    A -. "Web Fallback fetch(/api/...)" .-> D
-    C -- "Reads GOOGLE_API_KEY (.env)" --> E
-    D -- "Reads GOOGLE_API_KEY (Vercel Env)" --> E
-    C --> F
-    D --> F
-```
-
-> [!IMPORTANT]
-> **API Key Safety**: The UI (`renderer/`) never executes direct HTTP requests containing `GOOGLE_API_KEY`. Requests are passed through Electron's `contextBridge` to `main.js` (or through `/api/` on Vercel), ensuring that your secret key is never bundled in client code.
 
 ---
 
@@ -156,25 +120,10 @@ npm run dist
 
 ---
 
-## 🌐 Web & Vercel Deployment
-
-Hapag includes built-in support for deployment as a full web app using **Vercel Serverless Functions**:
-
-1. Deploy the repository to [Vercel](https://vercel.com).
-2. In your Vercel Project Settings, navigate to **Settings > Environment Variables** and add:
-   - `GOOGLE_API_KEY`: Your Gemini API key
-   - `GEMINI_MODEL`: `gemini-2.5-flash` (optional)
-3. Vercel automatically routes `/api/ai` and `/api/fetch-image` to the serverless backend while serving the UI from `/renderer`.
-
----
-
 ## 📁 Project Structure
 
 ```text
 ulam-finder-electron/
-├── api/                     # Vercel Serverless Functions (Web mode)
-│   ├── ai.js                # Serverless Gemini AI endpoint
-│   └── fetch-image.js       # Serverless Wikipedia image resolver
 ├── renderer/                # Frontend UI & Kiosk Application
 │   ├── images/              # Dish assets and dynamic image cache
 │   │   ├── cache/           # Locally cached web images
@@ -187,7 +136,6 @@ ulam-finder-electron/
 ├── main.js                  # Electron main process & IPC handlers
 ├── preload.js               # Secure IPC contextBridge bridge
 ├── package.json             # App manifest, build configs & dependencies
-├── vercel.json              # Vercel routing and rewrite configurations
 └── README.md                # Project documentation
 ```
 

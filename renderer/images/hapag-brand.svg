@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 140" width="760" height="140">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&amp;family=Hanken+Grotesk:wght@600&amp;family=JetBrains+Mono:wght@700&amp;display=swap');
+      .bg-rect {
+        fill: #141311;
+      }
+      .card-rect {
+        fill: #1D1B19;
+        stroke: #363432;
+        stroke-width: 1;
+      }
+      .brand-title {
+        font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+        font-weight: 700;
+        font-size: 52px;
+        letter-spacing: 0.14em;
+        fill: #FFC880;
+        text-anchor: middle;
+      }
+      .brand-subtitle {
+        font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+        font-weight: 600;
+        font-size: 13.5px;
+        letter-spacing: 0.22em;
+        fill: #D7C3AE;
+        text-transform: uppercase;
+        text-anchor: middle;
+      }
+      .tag {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        font-weight: 700;
+        fill: #9F8E7A;
+        letter-spacing: 0.1em;
+        text-anchor: middle;
+      }
+    </style>
+    <linearGradient id="goldGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFC880" />
+      <stop offset="100%" stop-color="#F5A623" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="100%" height="100%" rx="16" class="bg-rect"/>
+  
+  <!-- Subtle Inner Container -->
+  <rect x="8" y="8" width="744" height="124" rx="12" class="card-rect"/>
+
+  <!-- Brand Title (Same font: Playfair Display, color: #FFC880, format: uppercase, tracking: 0.14em) -->
+  <text x="380" y="68" class="brand-title" fill="url(#goldGlow)">HAPAG</text>
+  
+  <!-- Subtitle (Culinary Noir styling) -->
+  <text x="380" y="98" class="brand-subtitle">TOUCH KIOSK &amp; FILIPINO ULAM FINDER</text>
+</svg>

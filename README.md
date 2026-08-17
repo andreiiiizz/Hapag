@@ -1,11 +1,8 @@
 <div align="center">
 
-<h1 align="center" style="font-family: 'Playfair Display', Georgia, serif; font-size: 3.2rem; font-weight: 700; letter-spacing: 0.08em; color: #FFC880; margin-bottom: 0;">
-  HAPAG
-</h1>
-<p style="font-size: 1.15rem; color: #D7C3AE; margin-top: 4px;">
-  <strong>Filipino Ulam Kiosk & Recipe Finder</strong>
-</p>
+<img src="./renderer/images/hapag-brand.svg" alt="HAPAG - Filipino Ulam Kiosk" width="620" />
+
+<br/>
 
 <p><strong>An intelligent, touch-friendly Filipino dish discovery kiosk & meal planner powered by Google Gemini AI.</strong></p>
 
@@ -127,7 +124,8 @@ ulam-finder-electron/
 ├── renderer/                # Frontend UI & Kiosk Application
 │   ├── images/              # Dish assets and dynamic image cache
 │   │   ├── cache/           # Locally cached web images
-│   │   └── dishes/          # Bundled offline dish images
+│   │   ├── dishes/          # Bundled offline dish images
+│   │   └── hapag-brand.svg  # Kiosk brand vector asset
 │   ├── app.js               # Main UI controller & reactive state manager
 │   ├── data.js              # Filipino ulam database & ingredient taxonomy
 │   ├── index.html           # Kiosk layout, templates & modals

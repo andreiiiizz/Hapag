@@ -73,6 +73,7 @@ const emojiFor = (viand) => CAT_EMOJI[viand.cats[0]] || "🍽️"
 
 const STORE_KEY = "hapag.v2"
 const CUSTOM_VIANDS_KEY = "hapag.custom_viands"
+const CUSTOM_INGREDIENTS_KEY = "hapag.custom_ingredients"
 
 const state = {
   view: "browse",       // browse | kitchen | saved | history
@@ -80,6 +81,12 @@ const state = {
   kioskCategory: "ALL",
   sort: "best",
   selected: [],         // My Kitchen ingredients
+  customIngredients: {  // User-added custom ingredients per category
+    Protein: [],
+    Vegetable: [],
+    Pantry: [],
+    Aromatics: [],
+  },
   favorites: [],        // Saved recipe IDs
   history: [],
   progress: {},         // Cooking checklist progress
@@ -112,8 +119,14 @@ function isPantryStaple(text) {
 }
 
 function resolveRecipeUrl(viand) {
-  const searchTerm = (viand.name || viand.fname || "").trim()
-  return `https://panlasangpinoy.com/?s=${encodeURIComponent(searchTerm)}`
+  if (viand && viand.recipeUrl && typeof viand.recipeUrl === "string" && viand.recipeUrl.startsWith("http")) {
+    return viand.recipeUrl
+  }
+  if (viand && viand.sourceUrl && typeof viand.sourceUrl === "string" && viand.sourceUrl.startsWith("http")) {
+    return viand.sourceUrl
+  }
+  const searchTerm = ((viand && (viand.name || viand.fname)) || "").trim()
+  return searchTerm ? `https://panlasangpinoy.com/?s=${encodeURIComponent(searchTerm)}` : "https://panlasangpinoy.com"
 }
 
 function persistCustomViands(newViands = []) {
@@ -125,7 +138,13 @@ function persistCustomViands(newViands = []) {
     }
     const combined = Array.from(map.values()).slice(-60)
     localStorage.setItem(CUSTOM_VIANDS_KEY, JSON.stringify(combined))
-  } catch {}
+  } catch { }
+}
+
+function persistCustomIngredients() {
+  try {
+    localStorage.setItem(CUSTOM_INGREDIENTS_KEY, JSON.stringify(state.customIngredients || {}))
+  } catch { }
 }
 
 function hydrate() {
@@ -140,8 +159,30 @@ function hydrate() {
       }
     }
 
+    // Restore custom ingredients per category
+    const savedCustomIngs = JSON.parse(localStorage.getItem(CUSTOM_INGREDIENTS_KEY) || "{}")
+    if (Array.isArray(savedCustomIngs)) {
+      // Legacy migration from flat array to categorized map
+      state.customIngredients = {
+        Protein: [],
+        Vegetable: savedCustomIngs.filter((s) => typeof s === "string" && s.trim().length > 0),
+        Pantry: [],
+        Aromatics: [],
+      }
+    } else if (typeof savedCustomIngs === "object" && savedCustomIngs !== null) {
+      state.customIngredients = {
+        Protein: Array.isArray(savedCustomIngs.Protein) ? savedCustomIngs.Protein : [],
+        Vegetable: Array.isArray(savedCustomIngs.Vegetable) ? savedCustomIngs.Vegetable : [],
+        Pantry: Array.isArray(savedCustomIngs.Pantry) ? savedCustomIngs.Pantry : [],
+        Aromatics: Array.isArray(savedCustomIngs.Aromatics) ? savedCustomIngs.Aromatics : [],
+      }
+    } else {
+      state.customIngredients = { Protein: [], Vegetable: [], Pantry: [], Aromatics: [] }
+    }
+
+    const allCustom = Object.values(state.customIngredients).flat()
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}")
-    const known = new Set(Object.values(INGREDIENT_GROUPS).flat())
+    const known = new Set([...Object.values(INGREDIENT_GROUPS).flat(), ...allCustom])
     if (Array.isArray(saved.selected)) state.selected = saved.selected.filter((i) => known.has(i))
     if (Array.isArray(saved.favorites))
       state.favorites = saved.favorites.filter((id) => viandById.has(id))
@@ -163,6 +204,7 @@ const persist = debounce(() => {
         progress: state.progress,
       }),
     )
+    persistCustomIngredients()
   } catch {
     /* Private-mode storage failure must not break the session. */
   }
@@ -184,9 +226,26 @@ function setState(patch) {
 const viandById = new Map(VIANDS.map((v) => [v.id, v]))
 const selectedSet = () => new Set(state.selected)
 
+function getIngredientGroup(name) {
+  if (INGREDIENT_TO_GROUP[name]) return INGREDIENT_TO_GROUP[name]
+  if (state.customIngredients) {
+    for (const [group, items] of Object.entries(state.customIngredients)) {
+      if (Array.isArray(items) && items.includes(name)) return group
+    }
+  }
+  return "Vegetable"
+}
+
 function matchOf(viand, sel = selectedSet()) {
-  const have = viand.ing.filter((i) => sel.has(i) || isPantryStaple(i))
-  const missing = viand.ing.filter((i) => !sel.has(i) && !isPantryStaple(i))
+  const have = viand.ing.filter((i) => {
+    if (sel.has(i) || isPantryStaple(i)) return true
+    const iLower = i.toLowerCase()
+    return Array.from(sel).some((s) => {
+      const sLower = s.toLowerCase()
+      return sLower === iLower || iLower.includes(sLower) || sLower.includes(iLower)
+    })
+  })
+  const missing = viand.ing.filter((i) => !have.includes(i))
   const total = viand.ing.length || 1
   return { have, missing, pct: Math.round((have.length / total) * 100) }
 }
@@ -205,14 +264,14 @@ function matchList() {
   if (!state.selected.length) return []
   const sel = selectedSet()
 
-  const selProteins = state.selected.filter((i) => INGREDIENT_TO_GROUP[i] === "Protein")
+  const selProteins = state.selected.filter((i) => getIngredientGroup(i) === "Protein")
 
   const rows = VIANDS.map((v) => ({ viand: v, ...matchOf(v, sel) })).filter((r) => {
     // Must have at least 1 matching ingredient
     if (r.have.length === 0) return false
 
     // If proteins are selected, recipe should contain at least one of the selected proteins
-    if (selProteins.length > 0 && !r.viand.ing.some((i) => selProteins.includes(i))) return false
+    if (selProteins.length > 0 && !r.viand.ing.some((i) => selProteins.some(p => i.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(i.toLowerCase())))) return false
 
     // Pantry and Aromatics are NOT mandatory filters; having them simply contributes to "On hand" status
     return true
@@ -246,6 +305,74 @@ function toggleIngredient(name) {
     ? state.selected.filter((i) => i !== name)
     : [...state.selected, name]
   setState({ selected: next })
+}
+
+function addCustomIngredient(rawName, targetGroup = "Vegetable") {
+  const trimmed = (rawName || "").trim()
+  if (!trimmed) return
+
+  const formatted = titleCase(trimmed)
+  const group = INGREDIENT_GROUPS[targetGroup] ? targetGroup : "Vegetable"
+
+  // Check if it matches a built-in ingredient in any group
+  const allBuiltIn = Object.values(INGREDIENT_GROUPS).flat()
+  const matchingBuiltIn = allBuiltIn.find((i) => i.toLowerCase() === formatted.toLowerCase())
+
+  if (matchingBuiltIn) {
+    if (!state.selected.includes(matchingBuiltIn)) {
+      state.selected.push(matchingBuiltIn)
+      persist()
+    }
+    const input = document.getElementById("customIngInput")
+    if (input) input.value = ""
+    render()
+    return
+  }
+
+  // Check if already exists in customIngredients in any group
+  let foundGroup = null
+  let existingName = null
+  for (const [g, items] of Object.entries(state.customIngredients)) {
+    const existing = items.find((i) => i.toLowerCase() === formatted.toLowerCase())
+    if (existing) {
+      foundGroup = g
+      existingName = existing
+      break
+    }
+  }
+
+  const finalName = existingName || formatted
+  const finalGroup = foundGroup || group
+
+  if (!existingName) {
+    if (!state.customIngredients[finalGroup]) state.customIngredients[finalGroup] = []
+    state.customIngredients[finalGroup].push(finalName)
+    persistCustomIngredients()
+  }
+
+  if (!state.selected.includes(finalName)) {
+    state.selected.push(finalName)
+    persist()
+  }
+
+  const input = document.getElementById("customIngInput")
+  if (input) input.value = ""
+
+  buildPickers()
+  render()
+}
+
+function deleteCustomIngredient(name) {
+  if (state.customIngredients) {
+    for (const group of Object.keys(state.customIngredients)) {
+      state.customIngredients[group] = state.customIngredients[group].filter((i) => i !== name)
+    }
+  }
+  state.selected = state.selected.filter((i) => i !== name)
+  persistCustomIngredients()
+  persist()
+  buildPickers()
+  render()
 }
 
 function toggleFavorite(id) {
@@ -452,33 +579,90 @@ const paintAiCards = createGrid(ui.aiCardGrid)
 
 /* ============================================================== PICKERS */
 
-const pickers = Object.entries(INGREDIENT_GROUPS).map(([group, items]) => {
-  const node = ui.tplPicker.content.firstElementChild.cloneNode(true)
-  const refs = refsOf(node)
-  const slug = group.toLowerCase()
-  node.dataset.group = group
-  node.style.setProperty("--group", `var(--g-${slug})`)
-  node.style.setProperty("--group-light", `var(--g-${slug}-light)`)
-  node.style.setProperty("--group-tint", `var(--g-${slug}-tint)`)
-  refs.label.textContent = group
-  refs.filter.id = `filter-${slug}`
-  refs.filter.placeholder = `Search ${slug}…`
-  refs.filterLabel.setAttribute("for", refs.filter.id)
-  refs.filterLabel.textContent = `Search ${group} ingredients`
+const GROUP_PLACEHOLDERS = {
+  Protein: "e.g. Tokwa, Salmon, Tuna, Lechon",
+  Vegetable: "e.g. Pechay, Sigarilyas, Talinum, Saluyot",
+  Pantry: "e.g. Annatto Seeds, Star Anise, Coconut Cream",
+  Aromatics: "e.g. Shallot, Lemongrass, Pandan Leaves",
+}
 
-  const options = items.map((name) => {
-    const li = ui.tplPickerItem.content.firstElementChild.cloneNode(true)
-    const optRefs = refsOf(li)
-    optRefs.name.textContent = name
-    const btn = li.querySelector(".opt")
-    btn.type = "button"
-    btn.dataset.ing = name
-    return { name, li, btn }
+let pickers = []
+
+function buildPickers() {
+  pickers = Object.entries(INGREDIENT_GROUPS).map(([group, defaultItems]) => {
+    const node = ui.tplPicker.content.firstElementChild.cloneNode(true)
+    const refs = refsOf(node)
+    const slug = group.toLowerCase()
+    node.dataset.group = group
+    node.style.setProperty("--group", `var(--g-${slug})`)
+    node.style.setProperty("--group-light", `var(--g-${slug}-light)`)
+    node.style.setProperty("--group-tint", `var(--g-${slug}-tint)`)
+    refs.label.textContent = group
+    refs.filter.id = `filter-${slug}`
+    refs.filter.placeholder = `Search ${slug}…`
+    refs.filterLabel.setAttribute("for", refs.filter.id)
+    refs.filterLabel.textContent = `Search ${group} ingredients`
+
+    if (refs.addInput) {
+      refs.addInput.placeholder = `+ Add custom ${group} (${GROUP_PLACEHOLDERS[group] || "name"})…`
+    }
+    if (refs.addForm) {
+      refs.addForm.dataset.group = group
+      refs.addForm.addEventListener("submit", (e) => {
+        e.preventDefault()
+        const val = refs.addInput.value
+        if (val) {
+          addCustomIngredient(val, group)
+          refs.addInput.value = ""
+        }
+      })
+    }
+
+    const customItems = (state.customIngredients && state.customIngredients[group]) || []
+    const customSet = new Set(customItems)
+    const combinedItems = [...defaultItems, ...customItems]
+
+    const options = combinedItems.map((name) => {
+      const isCustom = customSet.has(name)
+      const li = ui.tplPickerItem.content.firstElementChild.cloneNode(true)
+      const optRefs = refsOf(li)
+      optRefs.name.textContent = name
+      const btn = li.querySelector(".opt")
+      btn.type = "button"
+      btn.dataset.ing = name
+
+      if (isCustom) {
+        li.className = "opt-custom-wrap"
+        const delBtn = document.createElement("button")
+        delBtn.type = "button"
+        delBtn.className = "opt-del-btn"
+        delBtn.dataset.act = "del-custom-ing"
+        delBtn.dataset.customIng = name
+        delBtn.title = `Delete ${name}`
+        delBtn.setAttribute("aria-label", `Delete ${name} from ${group}`)
+        delBtn.innerHTML = `<span class="material-symbols-outlined">delete</span>`
+        li.appendChild(delBtn)
+      }
+
+      return { name, li, btn, isCustom }
+    })
+
+    refs.list.replaceChildren(...options.map((o) => o.li))
+    return { group, node, refs, options }
   })
-  refs.list.replaceChildren(...options.map((o) => o.li))
-  return { group, node, refs, options }
-})
-ui.pickerRow.replaceChildren(...pickers.map((p) => p.node))
+
+  ui.pickerRow.replaceChildren(...pickers.map((p) => p.node))
+
+  // Attach search filters
+  for (const picker of pickers) {
+    picker.refs.filter.addEventListener(
+      "input",
+      debounce((event) => {
+        setState({ pickerFilter: { ...state.pickerFilter, [picker.group]: event.target.value } })
+      }, 120),
+    )
+  }
+}
 
 /* ============================================================ HISTORY */
 
@@ -815,7 +999,10 @@ function render() {
   /* ---- My Kitchen ---- */
   if (state.view === "kitchen") {
     for (const picker of pickers) {
-      const count = INGREDIENT_GROUPS[picker.group].filter((i) => state.selected.includes(i)).length
+      const defaultItems = INGREDIENT_GROUPS[picker.group] || []
+      const customItems = (state.customIngredients && state.customIngredients[picker.group]) || []
+      const allItems = [...defaultItems, ...customItems]
+      const count = allItems.filter((i) => state.selected.includes(i)).length
       const open = state.openPicker === picker.group
       picker.node.dataset.open = String(open)
       picker.node.dataset.filled = String(count > 0)
@@ -837,7 +1024,7 @@ function render() {
     ui.selectedRow.hidden = state.selected.length === 0
     ui.selectedList.replaceChildren(
       ...state.selected.map((name) => {
-        const group = (INGREDIENT_TO_GROUP[name] || "Pantry").toLowerCase()
+        const group = getIngredientGroup(name).toLowerCase()
         const li = document.createElement("li")
         li.className = "pill"
         li.style.setProperty("--group", `var(--g-${group})`)
@@ -941,6 +1128,24 @@ async function fetchDishImageService(dish) {
     return (data && data.url) || null
   } catch (err) {
     return null
+  }
+}
+
+async function validateRecipeService(payload) {
+  if (window.electronAPI && window.electronAPI.validateRecipeUrl) {
+    return await window.electronAPI.validateRecipeUrl(payload)
+  }
+  // Web / Vercel Serverless Function fallback
+  try {
+    const res = await fetch("/api/validate-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json()
+    return data || { valid: false, url: null }
+  } catch (err) {
+    return { valid: false, url: null }
   }
 }
 
@@ -2038,123 +2243,52 @@ function titleCase(str) {
   return (str || "").replace(/\b\w+/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase())
 }
 
-function generateProceduralRecipe(query) {
-  const cleanName = titleCase(query.trim())
-  const lower = query.toLowerCase()
-
-  let cats = ["Stew"]
-  let diff = "Beginner"
-  let minutes = 45
-  let serves = 4
-  let ing = ["Garlic", "Onion", "Soy Sauce", "Black Pepper"]
-  let detailed = [
-    `2 lbs Meat or Seafood for ${cleanName} (cleaned and cut into serving pieces)`,
-    "4 cloves Garlic (minced)",
-    "1 medium Onion (chopped)",
-    "3 tbsp Soy Sauce or Fish Sauce",
-    "1 cup Water or Broth",
-    "1/4 tsp Ground Black Pepper"
-  ]
-  let steps = [
-    `Prepare and clean the ingredients for authentic ${cleanName}.`,
-    "Sauté garlic and onions in hot oil until aromatic and softened.",
-    "Add the main ingredients and sear for 3 to 5 minutes to develop flavor.",
-    "Pour in seasoning and broth; simmer on medium-low heat until fork-tender.",
-    "Adjust seasoning to taste and serve steaming hot with white rice."
-  ]
-
-  if (lower.includes("soup") || lower.includes("sinigang") || lower.includes("tinola") || lower.includes("nilaga") || lower.includes("bulalo") || lower.includes("kansi") || lower.includes("sopas") || lower.includes("sabaw")) {
-    cats = ["Soup"]
-    ing = ["Ginger", "Onion", "Fish Sauce (Patis)", "Cabbage", "Garlic"]
-    detailed = [
-      `2 lbs Meat or Seafood for ${cleanName} (cut into portions)`,
-      "2 thumbs Ginger (sliced)",
-      "1 large Onion (quartered)",
-      "1/2 head Cabbage or leafy greens",
-      "6 cups Water or Broth",
-      "2 tbsp Fish Sauce (Patis)"
-    ]
-    steps = [
-      `In a soup pot, bring water to a boil with ginger and onions.`,
-      `Add main ingredients and simmer gently on low heat until tender, skimming any foam.`,
-      `Season with fish sauce to taste.`,
-      `Add fresh leafy greens and cover for 2 minutes to steam.`,
-      `Ladle piping hot broth and meat into bowls and serve with rice.`
-    ]
-  } else if (lower.includes("gata") || lower.includes("ginataan") || lower.includes("coconut")) {
-    cats = ["Stew"]
-    ing = ["Coconut Milk (Gata)", "Garlic", "Onion", "Ginger", "Siling Haba (Long Chili)"]
-    detailed = [
-      `2 lbs Main ingredients for ${cleanName}`,
-      "2 cups Coconut Milk (Gata)",
-      "1 cup Coconut Cream (Kakang Gata)",
-      "4 cloves Garlic (minced)",
-      "1 medium Onion (sliced)",
-      "2 pcs Siling Haba (Long Green Chili)"
-    ]
-    steps = [
-      `Sauté garlic, onion, and ginger in a pot until fragrant.`,
-      `Pour in coconut milk and bring to a gentle simmer.`,
-      `Add main ingredients and simmer on medium-low for 20 minutes until tender.`,
-      `Pour in coconut cream and chilies; cook until coconut oil renders and sauce thickens.`,
-      `Serve warm over steamed rice.`
-    ]
-  } else if (lower.includes("isda") || lower.includes("fish") || lower.includes("bangus") || lower.includes("tilapia") || lower.includes("hipon") || lower.includes("shrimp") || lower.includes("pusit") || lower.includes("squid") || lower.includes("seafood")) {
-    cats = ["Seafood"]
-    minutes = 25
-    ing = ["Tomato", "Onion", "Garlic", "Calamansi", "Fish Sauce (Patis)"]
-  } else if (lower.includes("pork") || lower.includes("baboy") || lower.includes("liempo") || lower.includes("lechon")) {
-    cats = ["Pork"]
-    ing = ["Pork Belly", "Garlic", "Onion", "Soy Sauce", "Vinegar"]
-  } else if (lower.includes("beef") || lower.includes("baka")) {
-    cats = ["Beef"]
-    minutes = 60
-    ing = ["Beef", "Garlic", "Onion", "Soy Sauce", "Tomato Sauce"]
-  } else if (lower.includes("chicken") || lower.includes("manok")) {
-    cats = ["Chicken"]
-    ing = ["Chicken", "Garlic", "Onion", "Soy Sauce", "Ginger"]
-  } else if (lower.includes("gulay") || lower.includes("vegetable") || lower.includes("kangkong") || lower.includes("talong") || lower.includes("sitaw")) {
-    cats = ["Vegetable"]
-    minutes = 25
-    ing = ["Garlic", "Onion", "Tomato", "Shrimp Paste (Bagoong)"]
-  }
-
-  const generated = {
-    id: 8600 + Math.floor(Math.random() * 900),
-    name: cleanName,
-    fname: cleanName,
-    cats,
-    diff,
-    minutes,
-    serves,
-    source: "Panlasang Pinoy",
-    recipeUrl: `https://panlasangpinoy.com/?s=${encodeURIComponent(cleanName)}`,
-    desc: `Authentic Filipino home-style recipe for ${cleanName} referencing traditional Panlasang Pinoy culinary methods.`,
-    ing,
-    ingredientsDetailed: detailed,
-    steps,
-    imageUrl: null,
-    isWebResult: true,
-  }
-  generated.imageUrl = resolveDishImageUrl(generated)
-  return generated
-}
-
 function findOfflineFallbackDishes(query) {
   const q = query.toLowerCase().trim()
+  if (!q) return []
   const matches = OFFLINE_FILIPINO_DISHES.filter((d) => {
     return `${d.name} ${d.fname} ${d.cats.join(" ")} ${d.ing.join(" ")} ${d.desc}`.toLowerCase().includes(q)
   })
 
-  if (matches.length > 0) {
-    return matches.map((item) => {
-      const v = { ...item }
-      v.imageUrl = resolveDishImageUrl(v)
-      return v
-    })
-  }
+  return matches.map((item) => {
+    const v = { ...item }
+    v.imageUrl = resolveDishImageUrl(v)
+    return v
+  })
+}
 
-  return [generateProceduralRecipe(query)]
+async function validateDishCandidates(candidates, originalQuery) {
+  if (!Array.isArray(candidates) || candidates.length === 0) return []
+  const validated = []
+
+  await Promise.all(
+    candidates.map(async (v) => {
+      try {
+        const valRes = await validateRecipeService({
+          url: v.recipeUrl,
+          name: v.name,
+          fname: v.fname,
+          query: originalQuery,
+        })
+        if (valRes && valRes.valid && valRes.url) {
+          v.recipeUrl = valRes.url
+          v.sourceUrl = valRes.url
+          validated.push(v)
+        } else if (!valRes || valRes.error) {
+          // If network error occurred, only keep if it was an offline pre-curated dish
+          if (OFFLINE_FILIPINO_DISHES.some((off) => off.id === v.id || off.name === v.name)) {
+            validated.push(v)
+          }
+        }
+      } catch (err) {
+        if (OFFLINE_FILIPINO_DISHES.some((off) => off.id === v.id || off.name === v.name)) {
+          validated.push(v)
+        }
+      }
+    })
+  )
+
+  return validated
 }
 
 const searchFallbackCache = new Map()
@@ -2183,16 +2317,15 @@ async function handleWebSearchFallback(query) {
     isWebSearching: true,
   })
 
-  const getFallbackDishes = () => {
-    return findOfflineFallbackDishes(normalized)
-  }
-
   const prompt = `You are a Filipino Master Chef referencing Panlasang Pinoy (panlasangpinoy.com).
 The user is searching for Filipino dishes matching or related to: "${query}".
 Find 1 to 4 authentic Filipino ulam recipes from Panlasang Pinoy matching or closely related to "${query}".
 AVOID these existing 20 dishes unless specifically requested: ${VIANDS.map((v) => v.name).join(", ")}.
 
-CRITICAL: Return ONLY a valid JSON array of dish objects with these exact keys:
+CRITICAL INSTRUCTIONS:
+- If the search query "${query}" is gibberish, not food, or has NO authentic Filipino recipe on Panlasang Pinoy, return an empty JSON array: []
+- Do NOT invent fictional dishes or non-Filipino recipes.
+- Otherwise, return ONLY a valid JSON array of dish objects with these exact keys:
 - "name": English dish name (e.g. "Pork Sisig", "Bistek Tagalog", "Bulalo")
 - "fname": Tagalog / Filipino dish name (e.g. "Sizzling Sisig", "Bistek Tagalog", "Nilagang Bulalo")
 - "cats": Array of 1-2 category strings (e.g. ["Pork"], ["Beef", "Soup"], ["Chicken", "Stew"], ["Seafood"], ["Vegetable"])
@@ -2255,18 +2388,6 @@ CRITICAL: Return ONLY a valid JSON array of dish objects with these exact keys:
                 viandById.set(v.id, v)
                 return v
               })
-
-            // Dynamically fetch exact web photos in parallel
-            await Promise.all(
-              dishes.map(async (v) => {
-                try {
-                  const dynamicPhoto = await fetchDishImageService({ name: v.name, fname: v.fname })
-                  if (dynamicPhoto) {
-                    v.imageUrl = dynamicPhoto
-                  }
-                } catch (e) {}
-              })
-            )
           }
         }
       } catch (e) {
@@ -2274,9 +2395,18 @@ CRITICAL: Return ONLY a valid JSON array of dish objects with these exact keys:
       }
     }
 
+    // If AI found no dishes, check offline curated dishes
     if (!dishes.length) {
-      dishes = getFallbackDishes()
+      dishes = findOfflineFallbackDishes(normalized)
       dishes.forEach((v) => viandById.set(v.id, v))
+    }
+
+    // Validate URLs against Panlasang Pinoy - only keep verified matches
+    if (dishes.length > 0) {
+      dishes = await validateDishCandidates(dishes, query)
+      dishes.forEach((v) => viandById.set(v.id, v))
+
+      // Dynamically fetch exact web photos in parallel for verified dishes
       await Promise.all(
         dishes.map(async (v) => {
           try {
@@ -2284,15 +2414,16 @@ CRITICAL: Return ONLY a valid JSON array of dish objects with these exact keys:
             if (dynamicPhoto) {
               v.imageUrl = dynamicPhoto
             }
-          } catch (e) {}
+          } catch (e) { }
         })
       )
     }
 
     if (currentSearchId !== activeWebSearchId) return
 
+    // Cache the result (even empty array for unmatched searches to prevent repeated broken lookups)
+    searchFallbackCache.set(normalized, dishes)
     if (dishes.length > 0) {
-      searchFallbackCache.set(normalized, dishes)
       persistCustomViands(dishes)
     }
 
@@ -2303,10 +2434,13 @@ CRITICAL: Return ONLY a valid JSON array of dish objects with these exact keys:
     })
   } catch (err) {
     if (currentSearchId !== activeWebSearchId) return
-    const fallback = getFallbackDishes()
-    fallback.forEach((v) => viandById.set(v.id, v))
+    let fallback = findOfflineFallbackDishes(normalized)
     if (fallback.length > 0) {
-      searchFallbackCache.set(normalized, fallback)
+      fallback = await validateDishCandidates(fallback, query)
+      fallback.forEach((v) => viandById.set(v.id, v))
+    }
+    searchFallbackCache.set(normalized, fallback)
+    if (fallback.length > 0) {
       persistCustomViands(fallback)
     }
     setState({
@@ -2484,6 +2618,14 @@ document.addEventListener("click", (event) => {
   const remove = target.closest("[data-remove]")
   if (remove) return toggleIngredient(remove.dataset.remove)
 
+  /* Delete custom ingredient */
+  const delCustomBtn = target.closest('[data-act="del-custom-ing"]')
+  if (delCustomBtn) {
+    event.stopPropagation()
+    const ingName = delCustomBtn.dataset.customIng
+    if (ingName) return deleteCustomIngredient(ingName)
+  }
+
   /* Picker toggle */
   const pickerBtn = target.closest('[data-act="toggle-picker"]')
   if (pickerBtn) {
@@ -2494,6 +2636,13 @@ document.addEventListener("click", (event) => {
   /* Named actions */
   const act = target.closest("[data-act]")?.dataset.act
   switch (act) {
+    case "add-custom-ingredient": {
+      const input = document.getElementById("customIngInput")
+      const catSelect = document.getElementById("customIngCategory")
+      const group = catSelect ? catSelect.value : "Vegetable"
+      if (input) addCustomIngredient(input.value, group)
+      return
+    }
     case "ai-search-ingredients":
       return handleAiIngredientSearch()
     case "ai-substitutions":
@@ -2549,6 +2698,18 @@ document.addEventListener("click", (event) => {
   if (state.openPicker && !target.closest(".picker")) setState({ openPicker: null })
 })
 
+/* Custom ingredient form submit */
+const customIngForm = document.getElementById("customIngForm")
+if (customIngForm) {
+  customIngForm.addEventListener("submit", (event) => {
+    event.preventDefault()
+    const input = document.getElementById("customIngInput")
+    const catSelect = document.getElementById("customIngCategory")
+    const group = catSelect ? catSelect.value : "Vegetable"
+    if (input) addCustomIngredient(input.value, group)
+  })
+}
+
 /* Checklist steps */
 ui.cList.addEventListener("click", (event) => {
   const btn = event.target.closest(".step-btn")
@@ -2581,16 +2742,6 @@ const applyQuery = debounce((value) => {
 searchInput.addEventListener("input", (event) => applyQuery(event.target.value))
 searchInput.closest("form").addEventListener("submit", (event) => event.preventDefault())
 
-/* Picker search filters */
-for (const picker of pickers) {
-  picker.refs.filter.addEventListener(
-    "input",
-    debounce((event) => {
-      setState({ pickerFilter: { ...state.pickerFilter, [picker.group]: event.target.value } })
-    }, 120),
-  )
-}
-
 /* Keyboard shortcuts */
 document.addEventListener("keydown", (event) => {
   const activeTag = document.activeElement ? document.activeElement.tagName : ""
@@ -2620,4 +2771,5 @@ document.addEventListener("keydown", (event) => {
 /* ================================================================== INIT */
 
 hydrate()
+buildPickers()
 render()

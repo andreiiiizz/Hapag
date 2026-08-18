@@ -2,5 +2,6 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   callClaude: (payload) => ipcRenderer.invoke('ai-call', payload),
-  fetchDishImage: (dish) => ipcRenderer.invoke('fetch-dish-image', dish)
+  fetchDishImage: (dish) => ipcRenderer.invoke('fetch-dish-image', dish),
+  validateRecipeUrl: (payload) => ipcRenderer.invoke('validate-recipe-url', payload)
 });

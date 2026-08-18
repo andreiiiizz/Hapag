@@ -370,6 +370,7 @@ body {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -578,9 +579,11 @@ body {
   0% {
     transform: scale(0.8);
   }
+
   50% {
     transform: scale(1.35);
   }
+
   100% {
     transform: scale(1);
   }
@@ -798,6 +801,196 @@ body {
 }
 
 /* ======================================================= MY KITCHEN VIEW */
+.custom-ing-box {
+  margin-bottom: 14px;
+  background: var(--surface-container-low);
+  border: 1px solid rgba(82, 69, 52, 0.30);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+}
+
+.custom-ing-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.custom-ing-input-wrap {
+  flex: 1 1 200px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-variant);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  height: 42px;
+  transition: border-color var(--t-ui), box-shadow var(--t-ui);
+}
+
+.custom-ing-input-wrap:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(255, 183, 77, 0.2);
+}
+
+.custom-ing-icon {
+  font-size: 20px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.custom-ing-input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+}
+
+.custom-ing-input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.custom-ing-cat-wrap {
+  flex: 0 0 auto;
+}
+
+.custom-ing-select {
+  height: 42px;
+  padding: 0 12px;
+  background: var(--surface-variant);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--t-ui);
+}
+
+.custom-ing-select:focus {
+  border-color: var(--primary);
+}
+
+.custom-ing-btn {
+  height: 42px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+}
+
+/* Inline Picker Add Form */
+.picker-add-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(82, 69, 52, 0.25);
+}
+
+.picker-add-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-variant);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  padding: 0 10px;
+  height: 36px;
+  transition: border-color var(--t-ui);
+}
+
+.picker-add-input-wrap:focus-within {
+  border-color: var(--primary);
+}
+
+.picker-add-icon {
+  font-size: 18px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.picker-add-input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+}
+
+.picker-add-input::placeholder {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.picker-add-btn {
+  height: 36px;
+  padding: 0 14px;
+  background: var(--primary);
+  color: #1a0f00;
+  border: 0;
+  border-radius: var(--radius);
+  font-family: var(--font-headline);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter var(--t-ui), transform var(--t-press);
+}
+
+.picker-add-btn:hover {
+  filter: brightness(1.1);
+}
+
+.picker-add-btn:active {
+  transform: scale(0.97);
+}
+
+.opt-custom-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.opt-del-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  transition: color var(--t-ui), background var(--t-ui);
+}
+
+.opt-del-btn:hover {
+  color: var(--error);
+  background: rgba(255, 180, 171, 0.12);
+}
+
+.opt-del-btn .material-symbols-outlined {
+  font-size: 16px;
+}
+
 .picker-row {
   display: flex;
   flex-direction: column;
@@ -1296,6 +1489,7 @@ body {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1856,6 +2050,7 @@ body {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -1880,6 +2075,7 @@ body {
     opacity: 0;
     transform: scale(0.95) translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -2098,6 +2294,7 @@ body {
 
 /* ====================================================== RESPONSIVE FINE */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
